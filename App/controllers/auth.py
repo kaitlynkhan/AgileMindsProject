@@ -73,11 +73,6 @@ def setup_jwt(app):
 
     return jwt
 
-
-# ----------------------------
-# Template Context: Authentication State
-# ----------------------------
-
 def add_auth_context(app):
     @app.context_processor
     def inject_user():
