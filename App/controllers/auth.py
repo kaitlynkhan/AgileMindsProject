@@ -5,65 +5,79 @@ from flask_jwt_extended import (
 from App.models import User
 from App.database import db
 
-def login(username, password):
-  result = db.session.execute(db.select(User).filter_by(username=username))
-  user = result.scalar_one_or_none()
-  if user and user.check_password(password):
-    # Store ONLY the user id as a string in JWT 'sub'
-    return create_access_token(identity=str(user.id))
-  return None
-
-def loginCLI(username, password):
+def _get_user_by_username(username):
+    """Fetch a user object by username."""
     result = db.session.execute(db.select(User).filter_by(username=username))
-    user = result.scalar_one_or_none()
+    return result.scalar_one_or_none()
+
+def login(username, password):
+    user = _get_user_by_username(username)
 
     if user and user.check_password(password):
-        
+        return create_access_token(identity=str(user.id))
+
+    return None
+
+
+def loginCLI(username, password):
+    user = _get_user_by_username(username)
+
+    if user and user.check_password(password):
+
+        # Return existing token if already logged in
         if user.active_token:
             return {"message": "User already logged in", "token": user.active_token}
 
+        # Generate new token
         token = create_access_token(identity=str(user.id))
         user.active_token = token
         db.session.commit()
+
         return {"message": "Login successful", "token": token}
 
     return {"message": "Invalid username or password"}
 
+
 def logout(username):
-    result = db.session.execute(db.select(User).filter_by(username=username))
-    user = result.scalar_one_or_none()
+    user = _get_user_by_username(username)
 
     if not user:
         return {"message": "User not found"}
 
     if not user.active_token:
-        return {"message": f"User {username} is not logged in"}
+        return {"message": f"User '{username}' is not logged in"}
 
     user.active_token = None
     db.session.commit()
-    return {"message": f"User {username} logged out successfully"}
+
+    return {"message": f"User '{username}' logged out successfully"}
+
 
 def setup_jwt(app):
     jwt = JWTManager(app)
 
-    # Always store a string user id in the JWT identity (sub)
+    # Always store user.id (as string) in JWT
     @jwt.user_identity_loader
     def user_identity_lookup(identity):
         user_id = getattr(identity, "id", identity)
         return str(user_id) if user_id is not None else None
 
+    # Automatically load user from JWT on request
     @jwt.user_lookup_loader
     def user_lookup_callback(_jwt_header, jwt_data):
-        identity = jwt_data["sub"]
+        identity = jwt_data.get("sub")
         try:
-            user_id = int(identity)
+            return db.session.get(User, int(identity))
         except (TypeError, ValueError):
             return None
-        return db.session.get(User, user_id)
 
     return jwt
 
-# Context processor to make 'is_authenticated' available to all templates
+
+# ----------------------------
+# Template Context: Authentication State
+# ----------------------------
+
 def add_auth_context(app):
     @app.context_processor
     def inject_user():
@@ -71,10 +85,20 @@ def add_auth_context(app):
             verify_jwt_in_request()
             identity = get_jwt_identity()
             user_id = int(identity) if identity is not None else None
-            current_user = db.session.get(User, user_id) if user_id is not None else None
+
+            current_user = (
+                db.session.get(User, user_id)
+                if user_id is not None else None
+            )
+
             is_authenticated = current_user is not None
-        except Exception as e:
-            print(e)
+
+        except Exception:
+            # Invalid or missing JWT
             is_authenticated = False
             current_user = None
-        return dict(is_authenticated=is_authenticated, current_user=current_user)
+
+        return dict(
+            is_authenticated=is_authenticated,
+            current_user=current_user
+        )
