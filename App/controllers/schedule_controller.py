@@ -1,8 +1,7 @@
 from App.database import db
 from App.models.schedule import Schedule
 from App.models.shift import Shift
-from App.models.user import Staff, Admin
-from App.models.admin import Admin
+from App.models import Staff, Admin
 from datetime import datetime
 
 # Import strategies

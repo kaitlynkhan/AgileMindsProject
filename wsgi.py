@@ -7,8 +7,8 @@ from App.database import db, get_migrate
 from App.models import User
 from App.main import create_app 
 from App.controllers import (
-    create_user, get_all_users_json, get_all_users, initialize,
-    schedule_shift, get_combined_roster, clock_in, clock_out, get_shift_report, login,loginCLI
+    create_user, get_all_users_json, get_all_users, initialize, add_shift,
+    get_combined_roster, clock_in, clock_out, get_schedule_report, login,loginCLI
 )
 
 app = create_app()
@@ -75,12 +75,12 @@ shift_cli = AppGroup('shift', help='Shift management commands')
 @click.argument("schedule_id", type=int)
 @click.argument("start")
 @click.argument("end")
-def schedule_shift_command(staff_id, schedule_id, start, end):
+def add_shift_command(staff_id, schedule_id, start, end):
     from datetime import datetime
     admin = require_admin_login()
     start_time = datetime.fromisoformat(start)
     end_time = datetime.fromisoformat(end)
-    shift = schedule_shift(admin.id, staff_id, schedule_id, start_time, end_time)
+    shift = add_shift(admin.id, staff_id, schedule_id, start_time, end_time)
     print(f"✅ Shift scheduled under Schedule {schedule_id} by {admin.username}:")
     print(shift.get_json())
 
@@ -112,10 +112,12 @@ def clockout_command(shift_id):
 
 
 @shift_cli.command("report", help="Admin views shift report")
-def report_command():
+@click.argument("schedule_id", type=int)
+def report_command(schedule_id):
     admin = require_admin_login()
-    report = get_shift_report(admin.id)
-    print(f"📊 Shift report for {admin.username}:")
+    from App.controllers import get_schedule_report
+    report = get_schedule_report(admin.id, schedule_id)
+    print(f"📊 Shift report for Schedule {schedule_id}:")
     print(report)
 
 app.cli.add_command(shift_cli)

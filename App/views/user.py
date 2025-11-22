@@ -7,7 +7,6 @@ from App.controllers import (
     create_user,
     get_all_users,
     get_all_users_json,
-    jwt_required
 )
 
 user_views = Blueprint('user_views', __name__, template_folder='../templates')

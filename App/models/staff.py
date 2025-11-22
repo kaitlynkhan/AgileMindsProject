@@ -1,6 +1,8 @@
 from App.database import db
 from .user import User
 from datetime import datetime, timedelta
+from typing import List, Optional, Dict
+from App.models.shift import Shift
 
 class Staff(User):
 
@@ -20,13 +22,13 @@ class Staff(User):
         #Staff specific initialisation can be place here in future
 
     @property
-    def upcoming_shifts(self)_> List:
+    def upcoming_shifts(self)-> List:
         """Return shifts starting after now."""
         now = datetime.now()
         return sorted([s for s in self.shifts if s.start_time > now], key=lambda s: s.start_time)
 
     @property
-    def current_shift(self)-> Optional:
+    def current_shift(self)-> Optional["Shift"]:
         """Return the shift currently in progress, or None if none."""
         now = datetime.now()
         for shift in self.shifts:
@@ -43,7 +45,7 @@ class Staff(User):
         return total.total_seconds() / 3600  # convert to hours
 
     @property
-    def completed_shifts(self) -> List:
+    def completed_shifts(self) -> List["Shift"]:
         return [s for s in self.shifts if s.is_completed]
 
     @property

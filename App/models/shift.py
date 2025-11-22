@@ -15,6 +15,10 @@ class Shift(db.Model):
     start_time = db.Column(db.DateTime, nullable=False)
     end_time = db.Column(db.DateTime, nullable=False)
 
+    #day or night shift
+    type = db.Column(db.String(10), default="day")   
+
+
     # Times of clock in or out
     clock_in = db.Column(db.DateTime, nullable=True)
     clock_out = db.Column(db.DateTime, nullable=True)
