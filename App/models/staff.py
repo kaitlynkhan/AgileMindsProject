@@ -3,7 +3,11 @@ from .user import User
 from datetime import datetime, timedelta
 
 class Staff(User):
+
+  # Represents a staff user in system
+  # Inherits from User and implements staff-specific attributes
   
+    #Foreign key referring to User Class
     id = db.Column(db.Integer, db.ForeignKey("user.id"), primary_key=True)
 
     __mapper_args__ = {
@@ -11,18 +15,19 @@ class Staff(User):
     }
 
     # ---------- Constructor ----------
-    def __init__(self, username, password):
+    def __init__(self, username: str, password: str) -> None:
         super().__init__(username, password, "staff")
+        #Staff specific initialisation can be place here in future
 
     @property
-    def upcoming_shifts(self):
+    def upcoming_shifts(self)_> List:
         """Return shifts starting after now."""
         now = datetime.now()
         return sorted([s for s in self.shifts if s.start_time > now], key=lambda s: s.start_time)
 
     @property
-    def current_shift(self):
-        """Return the shift currently in progress."""
+    def current_shift(self)-> Optional:
+        """Return the shift currently in progress, or None if none."""
         now = datetime.now()
         for shift in self.shifts:
             if shift.start_time <= now <= shift.end_time:
@@ -30,7 +35,7 @@ class Staff(User):
         return None
 
     @property
-    def total_hours_scheduled(self):
+    def total_hours_scheduled(self) -> float:
         """Total hours scheduled across all shifts."""
         total = timedelta()
         for shift in self.shifts:
@@ -38,11 +43,11 @@ class Staff(User):
         return total.total_seconds() / 3600  # convert to hours
 
     @property
-    def completed_shifts(self):
+    def completed_shifts(self) -> List:
         return [s for s in self.shifts if s.is_completed]
 
     @property
-    def get_json(self):
+    def get_json(self)-> Dict:
         """Return Staff-specific JSON for frontend components."""
         return {
             "id": self.id,
