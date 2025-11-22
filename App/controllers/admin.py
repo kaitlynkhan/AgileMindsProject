@@ -1,56 +1,37 @@
 from datetime import datetime
-
 from App.database import db
-from App.models import Shift, Schedule
 from App.controllers.user import get_user
-
-
-def _assert_admin(admin_id):
-    admin = get_user(admin_id)
-    if not admin or admin.role != "admin":
-        raise PermissionError("Only admins can perform this action")
-    return admin
-
+from App.models.admin import Admin
+from App.controllers.schedule_controller import ScheduleController
 
 def create_schedule(admin_id, schedule_name):
-    _assert_admin(admin_id)
+    """Allow an admin to create a new schedule."""
+    admin = get_user(admin_id)
+    if not admin or admin.role != "admin":
+        raise PermissionError("Only admins can create schedules")
 
-    new_schedule = Schedule(
-        created_by=admin_id,
-        name=schedule_name,
-        created_at=datetime.utcnow()
-    )
+    return ScheduleController.create_schedule(admin_id, schedule_name)
 
-    db.session.add(new_schedule)
-    db.session.commit()
-    return new_schedule
+def add_shift(admin_id, staff_id, schedule_id, start_time, end_time, shift_type="day"):
+    """Allow an admin to manually add a shift."""
+    admin = get_user(admin_id)
+    if not admin or admin.role != "admin":
+        raise PermissionError("Only admins can schedule shifts")
 
+    return ScheduleController.add_shift(schedule_id, staff_id, start_time, end_time, shift_type)
 
-def schedule_shift(admin_id, staff_id, schedule_id, start_time, end_time):
-    _assert_admin(admin_id)
+def auto_populate_schedule(admin_id, schedule_id, strategy_name):
+    """Allow an admin to auto-populate shifts using a strategy."""
+    admin = get_user(admin_id)
+    if not admin or admin.role != "admin":
+        raise PermissionError("Only admins can populate schedules")
 
-    staff = get_user(staff_id)
-    if not staff or staff.role != "staff":
-        raise ValueError("Invalid staff member")
+    return ScheduleController.auto_populate(schedule_id, strategy_name)
 
-    schedule = db.session.get(Schedule, schedule_id)
-    if not schedule:
-        raise ValueError("Invalid schedule ID")
+def get_schedule_report(admin_id, schedule_id):
+    """Allow an admin to view the schedule report."""
+    admin = get_user(admin_id)
+    if not admin or admin.role != "admin":
+        raise PermissionError("Only admins can view schedule reports")
 
-    new_shift = Shift(
-        staff_id=staff_id,
-        schedule_id=schedule_id,
-        start_time=start_time,
-        end_time=end_time
-    )
-
-    db.session.add(new_shift)
-    db.session.commit()
-    return new_shift
-
-
-def get_shift_report(admin_id):
-    _assert_admin(admin_id)
-
-    shifts = Shift.query.order_by(Shift.start_time).all()
-    return [shift.get_json() for shift in shifts]
+    return ScheduleController.get_schedule_report(schedule_id)
