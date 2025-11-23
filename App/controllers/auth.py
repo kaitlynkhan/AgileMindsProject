@@ -1,8 +1,9 @@
+from flask import jsonify
 from flask_jwt_extended import (
     create_access_token, jwt_required, JWTManager,
-    get_jwt_identity, verify_jwt_in_request
+    get_jwt_identity, set_access_cookies, verify_jwt_in_request
 )
-from App.models import User
+from App.models import User, user
 from App.database import db
 
 def _get_user_by_username(username):
@@ -12,11 +13,12 @@ def _get_user_by_username(username):
 
 def login(username, password):
     user = _get_user_by_username(username)
-
     if user and user.check_password(password):
-        return create_access_token(identity=str(user.id))
-
-    return None
+        token = create_access_token(identity=username)
+        response = jsonify(access_token=token)
+        set_access_cookies(response, token)
+        return response
+    return jsonify(message="Invalid username or password"), 401
 
 
 def loginCLI(username, password):

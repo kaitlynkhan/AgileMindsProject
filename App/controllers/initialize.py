@@ -1,4 +1,6 @@
 from .user import create_user
+from App.models.schedule import Schedule
+from App.models.shift import Shift
 from App.database import db
 
 
@@ -10,21 +12,23 @@ def initialize():
     create_user('alice', 'alicepass', 'staff')
     create_user('tim', 'timpass', 'user')
 
-# db.session.commit()
+    db.session.commit()
 
-# # adding dummy schedule data for testing Jane
-# schedule = Schedule (
-#     name = "Morning Shift",
-#     created_by = 1
-# )
-# db.session.add(schedule)
-# db.session.commit()
+#adding dummy schedule data for testing Jane
+    schedule = Schedule (
+     name = "Morning Shift",
+     created_by = 1
+    )   
+    db.session.add(schedule)
+    db.session.commit()
 
 # # adding dummy shifts for Jane
-# shift1 = Shift (
-#     schedule_id = schedule.id,
-#     staff_id = 2,
-#     start_time = "2024-10-01 08:00:00",
-#     end_time = "2024-10-01 12:00:00"
-# )
-# db.session.add(shift1)
+    shift1 = Shift (
+     schedule_id = schedule.id,
+     staff_id = 2,
+     start_time = "2024-10-01 08:00:00",
+     end_time = "2024-10-01 12:00:00"
+    )
+    db.session.add(shift1)
+
+    #shift2 = Shift(staff_id=2, schedule_id=schedule.id, start_time="2024-10-01 12:00:00", end_time="2024-10-01 16:00:00")

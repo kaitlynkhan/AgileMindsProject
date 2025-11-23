@@ -23,53 +23,52 @@ admin_view = Blueprint('admin_view', __name__, template_folder='../templates')
 
 @admin_view.route('/createSchedule', methods=['POST'])
 @jwt_required()
-def createSchedule():
+def admin_createSchedule():
     try:
-        admin_id = get_jwt_identity()
+        #admin_id= get_jwt_identity()
         data = request.get_json()
-        scheduleName = data.get("scheduleName") # gets the scheduleName from the request body
-        schedule = admin.create_schedule(admin_id, scheduleName)  # Call controller method
-        
-        return jsonify(schedule.get_json()), 200 # Return the created schedule as JSON
-    except (PermissionError, ValueError) as e:
-        return jsonify({"error": str(e)}), 403
-    except SQLAlchemyError:
-        return jsonify({"error": "Database error"}), 500
+        if data:
+            schedule =  admin.create_schedule(data.get("admin_id"), data.get("name"))
+            if schedule:
+                return jsonify(schedule.get_json()), 200
+            else:
+                return jsonify({"error": "Failed to create schedule"}), 500
+    except (PermissionError):
+        return jsonify({"error": "Admin access required"}), 403
 
-@admin_view.route('/createShift', methods=['POST'])
+@admin_view.route('/addShift', methods=['POST'])
 @jwt_required()
-def createShift():
+def admin_add_Shift():
     try:
-        admin_id = get_jwt_identity()
+        #admin_id = get_jwt_identity()
         data = request.get_json()
-        scheduleID = data.get("scheduleID") # gets the scheduleID from the request body
-        staffID = data.get("staffID") # gets the staffID from the request body
-        startTime = data.get("start_time") # gets the startTime from the request body
-        endTime = data.get("end_time") # gets the endTime from the request body
-
-    # Try ISO first, fallback to "YYYY-MM-DD HH:MM:SS"
-        try:
-            start_time = datetime.fromisoformat(startTime)
-            end_time = datetime.fromisoformat(endTime)
-        except ValueError:
-            start_time = datetime.strptime(startTime, "%Y-%m-%d %H:%M:%S")
-            end_time = datetime.strptime(endTime, "%Y-%m-%d %H:%M:%S")
-
-        shift = admin.schedule_shift(admin_id, staffID, scheduleID, start_time, end_time)  # Call controller method
-        print("Debug: Created shift in view:", shift.get_json())
+        if not data:
+            return jsonify({"error": "Invalid input"}), 400
         
-        return jsonify(shift.get_json()), 200 # Return the created shift as JSON
-    except (PermissionError, ValueError) as e:
-        return jsonify({"error": str(e)}), 403
-    except SQLAlchemyError:
-        return jsonify({"error": "Database error"}), 500
+        shift = admin.add_shift(
+            schedule_id=data.get("schedule_id"),
+            staff_id=data.get("staff_id"),
+            start_time=datetime.fromisoformat(data.get("start_time")),
+            end_time=datetime.fromisoformat(data.get("end_time")),
+            shift_type=data.get("shift_type", "day"),
+            admin_id=data.get("admin_id")
+        )
 
-@admin_view.route('/shiftReport', methods=['GET'])
+        if shift:
+            shiftid= shift.id
+            updated_shift = admin.auto_populate_schedule(admin_id=data.get("admin_id"),schedule_id=data.get("schedule_id"), strategy_name=data.get("strategy_name", "even_distribution"))
+            dict_shift = str(updated_shift)
+            return jsonify(dict_shift), 200
+    except (PermissionError, ValueError) as e:
+            return jsonify({"error": str(e)}), 500
+    
+@admin_view.route('/scheduleReport', methods=['GET'])
 @jwt_required()
-def shiftReport():
+def scheduleReport():
     try:
-        admin_id = get_jwt_identity()
-        report = admin.get_shift_report(admin_id)  # Call controller method
+        #admin_id = get_jwt_identity()
+        data = request.get_json()
+        report = admin.get_schedule_report(data['admin_id'], data['schedule_id']) 
         return jsonify(report), 200
     except (PermissionError, ValueError) as e:
         return jsonify({"error": str(e)}), 403

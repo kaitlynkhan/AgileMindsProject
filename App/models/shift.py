@@ -30,6 +30,13 @@ class Shift(db.Model):
         lazy=True
     )
 
+    def __init__(self,staff_id, schedule_id, start_time, end_time) -> None:
+        self.staff_id = staff_id
+        self.schedule_id = schedule_id
+        self.start_time = start_time
+        self.end_time = end_time
+        
+
     @property
     def is_completed(self):
         return self.clock_in is not None and self.clock_out is not None
@@ -62,4 +69,3 @@ class Shift(db.Model):
             "is_active_shift": self.is_active_shift,
             "is_late": self.is_late,
         }
-

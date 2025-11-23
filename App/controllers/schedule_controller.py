@@ -29,7 +29,7 @@ class ScheduleController:
         return new_schedule
 
     @staticmethod
-    def add_shift(schedule_id, staff_id, start_time, end_time, shift_type="day"):
+    def controller_add_shift(schedule_id, staff_id, start_time, end_time, shift_type="day"):
         """Add a shift for a specific staff to a schedule."""
         schedule = db.session.get(Schedule, schedule_id)
         staff = db.session.get(Staff, staff_id)
@@ -77,7 +77,7 @@ class ScheduleController:
         return updated_shifts
 
     @staticmethod
-    def get_schedule_report(schedule_id):
+    def get_Schedule_report(schedule_id):
         """Return JSON data for a schedule and its shifts."""
         schedule = db.session.get(Schedule, schedule_id)
         if not schedule:

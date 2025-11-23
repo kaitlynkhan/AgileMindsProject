@@ -14,7 +14,7 @@ def _assert_staff(staff_id):
 
 def _get_shift_for_staff(staff_id, shift_id):
     """Fetch a shift and verify it belongs to the given staff member."""
-    shift = db.session.get(Shift, shift_id)
+    shift = get_shift(shift_id)
     if not shift or shift.staff_id != staff_id:
         raise ValueError("Invalid shift for staff")
     return shift
@@ -44,4 +44,8 @@ def clock_out(staff_id, shift_id):
 
 
 def get_shift(shift_id):
-    return db.session.get(Shift, shift_id)
+    shift = Shift.query.get(shift_id)
+    if not shift:
+        raise ValueError("Shift not found")
+    return shift
+    #return db.session.get(Shift, shift_id)

@@ -18,7 +18,7 @@ def add_shift(admin_id, staff_id, schedule_id, start_time, end_time, shift_type=
     if not admin or admin.role != "admin":
         raise PermissionError("Only admins can schedule shifts")
 
-    return ScheduleController.add_shift(schedule_id, staff_id, start_time, end_time, shift_type)
+    return ScheduleController.controller_add_shift(schedule_id, staff_id, start_time, end_time, shift_type)
 
 def auto_populate_schedule(admin_id, schedule_id, strategy_name):
     """Allow an admin to auto-populate shifts using a strategy."""
@@ -34,4 +34,4 @@ def get_schedule_report(admin_id, schedule_id):
     if not admin or admin.role != "admin":
         raise PermissionError("Only admins can view schedule reports")
 
-    return ScheduleController.get_schedule_report(schedule_id)
+    return ScheduleController.get_Schedule_report(schedule_id)
