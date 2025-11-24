@@ -17,7 +17,7 @@ staff_views = Blueprint('staff_views', __name__, template_folder='../templates')
 @staff_views.route("/allshifts", methods=['GET'])
 def get_all_shifts():
         data = request.get_json()
-        staffID = data.get("staff_id")
+        staffId =int(get_jwt_identity())
         staf = staff._assert_staff(staffID)
         if not staffID or not staf:
             return jsonify({"error": "Unauthorized access"}), 403
@@ -29,14 +29,15 @@ def get_all_shifts():
 @staff_views.route('/staffshift', methods=['GET'])
 @jwt_required()
 def staff_get_shift():
-    try:
+    try: 
+        staffID =int(get_jwt_identity())
+        
         data=request.get_json()
         shiftID = data.get("shift_id")
-        staffID = data.get("staff_id")
+        #staffID = data.get("staff_id")
         if not shiftID or not staffID:
             return jsonify({"error": "valid shift_id and staff_id are required"}), 400
         staf = staff._assert_staff(staffID)
-        #if staffID != int(get_jwt_identity()) or not staf:
         if not staffID or not staf:
             return jsonify({"error": "Unauthorized access"}), 403
         shift = staff._get_shift_for_staff(int(staffID), int(shiftID))
@@ -51,10 +52,8 @@ def staff_get_shift():
 @jwt_required()
 def get_combinedRoster():
     try:
-        #staffId =int(get_jwt_identity())
+        staffId =int(get_jwt_identity())
         data=request.get_json()
-        #shiftID = data.get("shift_id")
-        staffId = data.get("staff_id")
         staf = staff._assert_staff(staffId)
         if staf:
             roster = staff.get_combined_roster(staffId)
@@ -69,9 +68,7 @@ def get_combinedRoster():
 @staff_views.route("/staff/clockIn", methods=["POST"])
 @jwt_required()
 def staff_clock_in():
-    #staffId=int(get_jwt_identity())
-    data=request.get_json()
-    staffId = data.get("staff_id")
+    staffId=int(get_jwt_identity())
     staf = staff._assert_staff(staffId)
     if not staf:
         return jsonify({"error": "unauthorized access"}), 403
