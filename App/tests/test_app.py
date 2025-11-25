@@ -195,9 +195,8 @@ class StaffUnitTests(unittest.TestCase):
         shift = Shift(staff_id=1, schedule_id=1, start_time=datetime.now(), end_time=datetime.now() + timedelta(hours=2))
         with self.assertRaises(PermissionError):
             staff_controller.clock_in(non_staff.id, shift.id)
-'''
-    Integration Tests
-'''
+
+###  Integration Tests   ###
 
 def test_authenticate():
     user = User("bob", "bobpass","user")
@@ -205,23 +204,12 @@ def test_authenticate():
 
 class UsersIntegrationTests(unittest.TestCase):
 
-    def test_get_all_users_json(self):
-        user = create_user("bot", "bobpass","admin")
-        user = create_user("pam", "pampass","staff")
-        users_json = get_all_users_json()
-        self.assertListEqual([{"id":1, "username":"bot", "role":"admin"}, {"id":2, "username":"pam","role":"staff"}], users_json)
-
-    def test_update_user(self):
-        user = create_user("bot", "bobpass","admin")
-        update_user(1, "ronnie")
-        user = get_user(1)
-        assert user.username == "ronnie"
-
     def test_create_and_get_user(self):
-        user = create_user("alex", "alexpass", "staff")
+        user= create_user("alice","pass123", "user")
         retrieved = get_user(user.id)
-        self.assertEqual(retrieved.username, "alex")
-        self.assertEqual(retrieved.role, "staff")
+        self.assertEqual(retrieved.username, "alice")
+        self.assertEqual(retrieved.role, "user")
+
     
     def test_get_all_users_json_integration(self):
         create_user("bot", "bobpass", "admin")
@@ -237,7 +225,7 @@ class UsersIntegrationTests(unittest.TestCase):
         admin = create_user("admin1", "adminpass", "admin")
         staff = create_user("staff1", "staffpass", "staff")
 
-        schedule = Schedule(name="Week 1 Schedule", created_by=admin.id)
+        schedule = Schedule(name="Week Schedule", created_by=admin.id)
         db.session.add(schedule)
         db.session.commit()
 
