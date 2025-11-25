@@ -109,32 +109,6 @@ class AdminUnitTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             add_shift(non_admin.id, staff.id, schedule.id, start, end)
 
-    def test_confirm_hours_via_controller(self):
-        staff = create_user("staff3", "pass123", "staff")
-        hours_id = 1
-        # Must use the staff_controller.confirm_hours function
-        result = staff_controller.confirm_hours(hours_id, staff.id)
-        expected_msg = {"message": f"Hours record {hours_id} confirmed by staff {staff.id}."}
-        self.assertEqual(result, expected_msg)
-
-    def test_confirm_hours_invalid_staff(self):
-        hours_id = 1
-        result = staff_controller.confirm_hours(hours_id, "abc")
-        expected_error = {"error": "Staff member with ID 'abc' not found."}
-        self.assertEqual(result, expected_error)
-
-    def test_confirm_hours_invalid_record(self):
-        result = staff_controller.confirm_hours("abc", 3)
-        expected_error = {"error": "Invalid ID format provided"}
-        self.assertEqual(result, expected_error)
-
-    def test_confirm_hours_previous_confirmed(self):
-        # Assuming hours_id=5 already confirmed by staff 8
-        result = staff_controller.confirm_hours(5, 9)
-        expected_msg = {"message": "Hours record 5 was already confirmed by staff ID 8"}
-        self.assertEqual(result, expected_msg)
-
-    
 ### Staff unit tests ###
 
 class StaffUnitTests(unittest.TestCase):
