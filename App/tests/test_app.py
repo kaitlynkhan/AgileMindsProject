@@ -10,10 +10,11 @@ from App.models.strategies.minimize_days import MinimizeDaysStrategy
 from App.models.strategies.balance_day_night import BalanceDayNightStrategy
 #controllerz
 from App.controllers.user import create_user, get_user, update_user, get_all_users_json
-from App.controllers.staff import clock_in, clock_out, get_combiner_roster
-from App.controllers.admin import get_schedule_report
-from App.controllers.schedule_controller import ScheduleController, schedule_shift, get_shift_report
+from App.controllers.staff import staff_controller
+from App.controllers.admin import admin_controller
+from App.controllers.schedule_controller import ScheduleController
 from App.controllers.shift_controller import get_shift
+from App.controllers.auth import loginCLI
 
 @pytest.fixture(autouse=True)
 def clean_db():
@@ -39,18 +40,18 @@ LOGGER = logging.getLogger(__name__)
 class UserUnitTests(unittest.TestCase):
 
     def test_create_user_valid(self):
-        user= user_controller.create_user ("bob", "pass123", "user")
+        user= create_user ("bob", "pass123", "user")
         self.assertEqual(user.username, "bob")
         self.assertEqual(user.role, "user")
         self.assertTrue(user.check_password("pass123"))
 
     def test_create_user_invalid_role(self):
-        user = user_controller.create_user("bob", "pass123", "ceo")
+        user = create_user("bob", "pass123", "ceo")
         self.assertIsNone(user)
 
     def test_check_password_correct(self):
         user= create_user("alice", "pass123", "user")
-        self.assertTrue (user.chech_password("pass123")
+        self.assertTrue (user.check_password("pass123")
 
     def test_check_password_incorrect(self):
         user= create_user("alice2", "pass123", "user")
@@ -59,52 +60,79 @@ class UserUnitTests(unittest.TestCase):
     def test_get_json(self):
         user = create_user("charlie", "pass123", "user")
         user_json= user.get_json()
-        self.assertEqual(user.get_json["username"], "charlie")
+        self.assertEqual(user.get_json())
         self.assertEqual(user_json["role"],"user")
 
     def test_update_username(self):
         user = create_user("dave", "pass123", "user")
         update_user (user.id, "newname")
-        updates = get_user(user.id)
+        updated = get_user(user.id)
         self.assertEqual (updated.username, "newname")
     
 ### Admin unit test ###
                                             
 class AdminUnitTests(unittest.TestCase):
 
-    def test_create_staff(self):
-        staff = staff_controller.create_staff ("Mrs.Jane")
-        self.assertEqual (staff.username, "Mrs.Jane")
+    def test_create_schedule_valid(self):
+        admin = create_user("admin1", "adminpass", "admin")
+        schedule = create_schedule(admin.id, "Week Schedule")
+        self.assertEqual(schedule.name, "Week Schedule")
+        self.assertEqual(schedule.created_by, admin.id)
 
-    def test_create_staff_empty_name(self):
-        result = staff_controller.create_staff("")
-        self.assertEqual(result, {"error": "staff name cannot be empty."})
+    def test_create_schedule_invalid_user(self):
+        non_admin = create_user("user1", "userpass", "user")
+        with self.assertRaises(PermissionError):
+            create_schedule(non_admin.id, "Invalid Schedule")
 
-    def test_create_staff_duplicate(self):
-        staff_controller.create_stafff("Mrs.Jane")
-        result = staff_controller.create_staff("Mrs.Jane")
-        self.assertEqual(result, {"error": "Staff with name 'Mrs.Jane' already exists."})
+    def test_add_shift_valid(self):
+        admin = create_user("admin2", "adminpass", "admin")
+        staff = create_user("staff1", "staffpass", "staff")
+        schedule = create_schedule(admin.id, "Shift Test Schedule")
 
-    def test_confirm_hours_valid(self):
-        #mock setup
-        staff= staff_controller.create_staff("StaffA")
+        start = datetime.now()
+        end = start + timedelta(hours=8)
+        shift = add_shift(admin.id, staff.id, schedule.id, start, end)
+
+        # Reload staff to check assigned shift
+        retrieved_staff = get_user(staff.id)
+        self.assertIn(shift, retrieved_staff.shifts)
+        self.assertEqual(shift.staff_id, staff.id)
+        self.assertEqual(shift.schedule_id, schedule.id)
+
+    def test_add_shift_invalid_user(self):
+        non_admin = create_user("user2", "userpass", "user")
+        staff = create_user("staff2", "staffpass", "staff")
+        schedule = create_schedule(create_user("admin3", "adminpass", "admin").id, "Schedule")
+        start = datetime.now()
+        end = start + timedelta(hours=8)
+
+        with self.assertRaises(PermissionError):
+            add_shift(non_admin.id, staff.id, schedule.id, start, end)
+
+    def test_confirm_hours_via_controller(self):
+        staff = create_user("staff3", "pass123", "staff")
         hours_id = 1
+        # Must use the staff_controller.confirm_hours function
         result = staff_controller.confirm_hours(hours_id, staff.id)
-        self.assertEqual(result, "message": f"Hours record {hours_id} confirmed by staff {staff.id}."})
+        expected_msg = {"message": f"Hours record {hours_id} confirmed by staff {staff.id}."}
+        self.assertEqual(result, expected_msg)
 
-    def test_confirm_hours_invalid(self):
-        hours_id=1
-        result= staff_controller.confirm_hours(hours_id,"abc")
-        self.assertEqual(result, {"error": "Staff member with IS 'abc' not found."})
-        
+    def test_confirm_hours_invalid_staff(self):
+        hours_id = 1
+        result = staff_controller.confirm_hours(hours_id, "abc")
+        expected_error = {"error": "Staff member with ID 'abc' not found."}
+        self.assertEqual(result, expected_error)
+
     def test_confirm_hours_invalid_record(self):
         result = staff_controller.confirm_hours("abc", 3)
-        self.assertEqual (result, {"error": "Invalid ID format providied"})
+        expected_error = {"error": "Invalid ID format provided"}
+        self.assertEqual(result, expected_error)
 
     def test_confirm_hours_previous_confirmed(self):
-        #done assuming that hours_id=5 is already confirmed by staff 8
-        result = staff_controller.confirm_hours(5,9)
-        self.assertEqual(result, {"message": "Hours record 5 was already confirmed by staff ID 8"})
+        # Assuming hours_id=5 already confirmed by staff 8
+        result = staff_controller.confirm_hours(5, 9)
+        expected_msg = {"message": "Hours record 5 was already confirmed by staff ID 8"}
+        self.assertEqual(result, expected_msg)
 
     
 ### Staff unit tests ###
@@ -121,7 +149,7 @@ class StaffUnitTests(unittest.TestCase):
         shift1= Shift(staff_id=staff.id, schedule_id=1, start_time=datetime.now()+timedelta(hours=1), end_time=datetime.now()+timedelta(hours=3))
         shift2= Shift(staff_id=staff.id, schedule_id=1, start_time=datetime.now()+timedelta(hours=2), end_time=datetime.now()+timedelta(hours=4))
         staff.shifts = [shift2, shift1]
-        self.assertEqual (staff.upcoming_shifts, sorted(staff.shofts, key= lambda s: start_time))
+        self.assertEqual (staff.upcoming_shifts, sorted(staff.shifts, key= lambda s.start_time))
 
     def test_staff_current_shift(self):
         staff = Staff ("bob" , "pass123")
@@ -135,10 +163,10 @@ class StaffUnitTests(unittest.TestCase):
         shift1= Shift (staff_id= staff.id, schedule_id=1, start_time=datetime.now(), end_time= datetime.now() + timedelta(hours=1))
         shift2= Shift (staff_id= staff.id, schedule_id=1, start_time=datetime.now(), end_time= datetime.now() + timedelta(hours=1))
         staff.shifts= [shift1, shift2]
-        self.assertAlmostEqual(staff.total_hours_schedules,5)
+        self.assertAlmostEqual(staff.total_hours_scheduled,5)
 
     def test_staff_completed_shifts(self):
-        satff = Staff("dana", "pass123")
+        staff = Staff("dana", "pass123")
         shift1= Shift (staff_id= staff.id, schedule_id=1, start_time=datetime.now(), end_time= datetime.now() + timedelta(hours=1))
         shift2= Shift (staff_id= staff.id, schedule_id=1, start_time=datetime.now(), end_time= datetime.now() + timedelta(hours=1))
         shift1.clock_in= datetime.now()
@@ -225,17 +253,15 @@ class UsersIntegrationTests(unittest.TestCase):
         admin = create_user("admin1", "adminpass", "admin")
         staff = create_user("staff1", "staffpass", "staff")
 
-        schedule = Schedule(name="Week Schedule", created_by=admin.id)
-        db.session.add(schedule)
-        db.session.commit()
+        schedule = ScheduleController.create_schedule(admin.id, "Week Schedule")
 
         start = datetime.now()
         end = start + timedelta(hours=8)
 
-        shift = schedule_shift(admin.id, staff.id, schedule.id, start, end)
+        shift = ScheduleController.controller_add_shift(schedule.id, staff.id, start, end)
         retrieved = get_user(staff.id)
 
-        self.assertIn(shift.id, [s.id for s in retrieved.shifts])
+        self.assertIn(shift, retrieved.shifts)
         self.assertEqual(shift.staff_id, staff.id)
         self.assertEqual(shift.schedule_id, schedule.id)
 
@@ -244,17 +270,15 @@ class UsersIntegrationTests(unittest.TestCase):
         staff = create_user("jane", "janepass", "staff")
         other_staff = create_user("mark", "markpass", "staff")
 
-        schedule = Schedule(name="Shared Roster", created_by=admin.id)
-        db.session.add(schedule)
-        db.session.commit()
+        schedule = ScheduleController.create_schedule(admin.id,"Shared Roster")
 
         start = datetime.now()
         end = start + timedelta(hours=8)
 
-        schedule_shift(admin.id, staff.id, schedule.id, start, end)
-        schedule_shift(admin.id, other_staff.id, schedule.id, start, end)
+        ScheduleController.controller_add_shift(schedule.id, staff.id, start, end)
+        ScheduleController.controller_add_shift(schedule.id, other_staff.id, start, end)
 
-        roster = get_combined_roster(staff.id)
+        roster = staff_controller.get_combined_roster(staff.id)
         self.assertTrue(any(s["staff_id"] == staff.id for s in roster))
         self.assertTrue(any(s["staff_id"] == other_staff.id for s in roster))
 
@@ -262,20 +286,18 @@ class UsersIntegrationTests(unittest.TestCase):
         admin = create_user("admin", "adminpass", "admin")
         staff = create_user("lee", "leepass", "staff")
 
-        schedule = Schedule(name="Daily Schedule", created_by=admin.id)
-        db.session.add(schedule)
-        db.session.commit()
-
+        schedule = ScheduleController.create_schedule(admin.id, "Daily Schedule")
+        
         start = datetime.now()
         end = start + timedelta(hours=8)
 
-        shift = schedule_shift(admin.id, staff.id, schedule.id, start, end)
+        shift = ScheduleController.controller_add_shift(schedule.id, staff.id, start, end)
 
-        clock_in(staff.id, shift.id)
-        clock_out(staff.id, shift.id)
+        staff_controller.clock_in(staff.id, shift.id)
+        staff_controller.clock_out(staff.id, shift.id)
 
 
-        updated_shift = get_shift(shift.id)
+        updated_shift = Shift.query.get(shift.id)
         self.assertIsNotNone(updated_shift.clock_in)
         self.assertIsNotNone(updated_shift.clock_out)
         self.assertLess(updated_shift.clock_in, updated_shift.clock_out)
@@ -284,36 +306,29 @@ class UsersIntegrationTests(unittest.TestCase):
         admin = create_user("boss", "boss123", "admin")
         staff = create_user("sam", "sampass", "staff")
 
-        schedule = Schedule(name="Weekly Schedule", created_by=admin.id)
-        db.session.add(schedule)
-        db.session.commit()
+        schedule = ScheduleController.create_schedule(admin.id, "Weekly Schedule")
 
         start = datetime.now()
         end = start + timedelta(hours=8)
 
-        schedule_shift(admin.id, staff.id, schedule.id, start, end)
-        report = get_shift_report(admin.id)
+        ScheduleController.controller_add_shift(schedule.id, staff.id, start, end)
+        report = ScheduleController.get_Schedule_report(schedule.id)
 
-        self.assertTrue(any("sam" in r["staff_name"] for r in report))
-        self.assertTrue(all("start_time" in r and "end_time" in r for r in report))
+        self.assertTrue(any(s["staff_id"]==staff.id for s in report ["shifts"]))
+        self.assertTrue("start_time" in report["shifts"][0] and "end_time" in report ["shifts"][0])
 
     def test_permission_restrictions(self):
-        admin = create_user("admin", "adminpass", "admin")
+        admin = create_user("admin4", "adminpass", "admin")
         staff = create_user("worker", "workpass", "staff")
 
         # Create schedule
-        schedule = Schedule(name="Restricted Schedule", created_by=admin.id)
-        db.session.add(schedule)
-        db.session.commit()
+        schedule = ScheduleController.create_schedule(admin.id, "Restricted Schedule")
 
         start = datetime.now()
         end = start + timedelta(hours=8)
 
         with self.assertRaises(PermissionError):
-            schedule_shift(staff.id, staff.id, schedule.id, start, end)
+            ScheduleController.controller_add_shift(schedule.id, staff.id, start, end)
 
         with self.assertRaises(PermissionError):
-            get_combined_roster(admin.id)
-
-        with self.assertRaises(PermissionError):
-            get_shift_report(staff.id)
+            staff_controller.get_combined_roster(admin.id)
