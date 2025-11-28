@@ -1,0 +1,57 @@
+{% extends "layout.html" %}
+{% block title %}Staff Dashboard{% endblock %}
+{% block page %}Staff Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-header center-align animate-fade-in">
+    <h1>My Schedule</h1>
+    <p class="grey-text">View your shifts and manage your time</p>
+</div>
+
+<div class="row">
+    <!-- Upcoming Shifts Card -->
+    <div class="col s12 animate-fade-in delay-100">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">My Shifts</span>
+                <div id="shiftsContainer" class="row">
+                    <!-- Shifts will be loaded here -->
+                    <div class="col s12 center-align">
+                        <div class="preloader-wrapper small active">
+                            <div class="spinner-layer spinner-blue-only">
+                                <div class="circle-clipper left">
+                                    <div class="circle"></div>
+                                </div>
+                                <div class="gap-patch">
+                                    <div class="circle"></div>
+                                </div>
+                                <div class="circle-clipper right">
+                                    <div class="circle"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Clock In/Out Modal -->
+<div id="clockModal" class="modal">
+    <div class="modal-content">
+        <h4 id="modalTitle">Clock In</h4>
+        <p>Are you sure you want to <span id="actionText">clock in</span> for this shift?</p>
+        <p class="grey-text" id="shiftDetails"></p>
+    </div>
+    <div class="modal-footer">
+        <a href="#!" class="modal-close btn-flat">Cancel</a>
+        <a href="#!" id="confirmClockBtn" class="waves-effect waves-green btn-flat">Confirm</a>
+    </div>
+</div>
+
+<script>
+    const CURRENT_USER_ID = {{ current_user.id if current_user.is_authenticated else 'null' }};
+</script>
+<script src="{{ url_for('static', filename='staff.js') }}"></script>
+{% endblock %}

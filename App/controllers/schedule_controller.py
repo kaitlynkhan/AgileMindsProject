@@ -13,23 +13,20 @@ class ScheduleController:
     """Controller to manage schedules and auto-assign shifts using strategies."""
 
     @staticmethod
-    def create_schedule(admin_id, name):
-        """Create a new schedule for the admin."""
-        admin = db.session.get(Admin, admin_id)
-        if not admin:
-            raise PermissionError("Only admins can create schedules")
-
+    def create_schedule(admin_id, name, user_id=None):
+        """Create a new schedule, optionally for a specific user.
+        Note: Permission checking is done in admin controller."""
         new_schedule = Schedule(
             name=name,
             created_by=admin_id,
-            created_at=datetime.utcnow()
+            user_id=user_id
         )
         db.session.add(new_schedule)
         db.session.commit()
         return new_schedule
 
     @staticmethod
-    def controller_add_shift(schedule_id, staff_id, start_time, end_time, shift_type="day"):
+    def add_shift(schedule_id, staff_id, start_time, end_time, shift_type="day"):
         """Add a shift for a specific staff to a schedule."""
         schedule = db.session.get(Schedule, schedule_id)
         staff = db.session.get(Staff, staff_id)

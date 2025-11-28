@@ -14,11 +14,9 @@ def _get_user_by_username(username):
 def login(username, password):
     user = _get_user_by_username(username)
     if user and user.check_password(password):
-        token = create_access_token(identity=username)
-        response = jsonify(access_token=token)
-        set_access_cookies(response, token)
-        return response
-    return jsonify(message="Invalid username or password"), 401
+        token = create_access_token(identity=user)
+        return token
+    return None
 
 
 def loginCLI(username, password):

@@ -30,4 +30,12 @@ class User(db.Model):
 
     def check_password(self, password):
         # checks if entered password matches the stored hash 
-        return check_password_hash(self.password, password) 
+        return check_password_hash(self.password, password)
+    
+    def get_json(self):
+        """Return JSON representation of user."""
+        return {
+            "id": self.id,
+            "username": self.username,
+            "role": self.role
+        }

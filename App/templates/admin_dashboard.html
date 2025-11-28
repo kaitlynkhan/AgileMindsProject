@@ -1,0 +1,145 @@
+{% extends "layout.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block page %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-header center-align animate-fade-in">
+    <h1>Admin Control Center</h1>
+    <p class="grey-text">Manage schedules, shifts, and staff assignments</p>
+</div>
+
+<div class="row">
+    <!-- Create Schedule Card -->
+    <div class="col s12 m6 l4 animate-fade-in delay-100">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title"><i class="material-icons left">calendar_today</i>Create Schedule</span>
+                <p class="grey-text mb-4">Create a new schedule for a user or general use.</p>
+                <form id="createScheduleForm" class="mt-4">
+                    <div class="input-field">
+                        <input id="schedule_name" type="text" required>
+                        <label for="schedule_name">Schedule Name</label>
+                    </div>
+                    <div class="input-field">
+                        <input id="user_id" type="number">
+                        <label for="user_id">User ID (Optional)</label>
+                    </div>
+                    <button type="submit" class="btn waves-effect waves-light full-width">
+                        Create Schedule
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Shift Card -->
+    <div class="col s12 m6 l4 animate-fade-in delay-200">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title"><i class="material-icons left">add_circle</i>Add Shift</span>
+                <p class="grey-text mb-4">Add a single shift to an existing schedule.</p>
+                <form id="addShiftForm">
+                    <div class="input-field">
+                        <input id="shift_schedule_id" type="number" required>
+                        <label for="shift_schedule_id">Schedule ID</label>
+                    </div>
+                    <div class="input-field">
+                        <input id="staff_id" type="number" required>
+                        <label for="staff_id">Staff ID</label>
+                    </div>
+                    <div class="row mb-0">
+                        <div class="input-field col s6">
+                            <input id="start_time" type="text" class="datepicker" placeholder="Start Date">
+                            <label for="start_time" class="active">Start Time</label>
+                        </div>
+                        <div class="input-field col s6">
+                            <input id="end_time" type="text" class="datepicker" placeholder="End Date">
+                            <label for="end_time" class="active">End Time</label>
+                        </div>
+                    </div>
+                    <div class="input-field">
+                        <select id="shift_type">
+                            <option value="day" selected>Day Shift</option>
+                            <option value="night">Night Shift</option>
+                            <option value="evening">Evening Shift</option>
+                        </select>
+                        <label>Shift Type</label>
+                    </div>
+                    <button type="submit" class="btn waves-effect waves-light full-width">
+                        Add Shift
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auto Populate Card -->
+    <div class="col s12 m6 l4 animate-fade-in delay-300">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title"><i class="material-icons left">autorenew</i>Auto Populate</span>
+                <p class="grey-text mb-4">Automatically fill a schedule using a strategy.</p>
+                <form id="autoPopulateForm">
+                    <div class="input-field">
+                        <input id="auto_schedule_id" type="number" required>
+                        <label for="auto_schedule_id">Schedule ID</label>
+                    </div>
+                    <div class="input-field">
+                        <select id="strategy_name">
+                            <option value="even_distribution" selected>Even Distribution</option>
+                            <option value="minimize_days">Minimize Days</option>
+                            <option value="balance_day_night">Balance Day/Night</option>
+                        </select>
+                        <label>Strategy</label>
+                    </div>
+                    <button type="submit" class="btn waves-effect waves-light full-width secondary-btn">
+                        Run Strategy
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row animate-fade-in delay-300">
+    <div class="col s12">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Schedule Report</span>
+                <div class="row">
+                    <div class="input-field col s12 m4">
+                        <input id="report_schedule_id" type="number">
+                        <label for="report_schedule_id">Schedule ID to View</label>
+                    </div>
+                    <div class="col s12 m4">
+                        <button id="getReportBtn" class="btn waves-effect waves-light mt-4">
+                            View Report
+                        </button>
+                    </div>
+                </div>
+                <div id="reportResult" class="mt-4" style="display:none;">
+                    <table class="highlight responsive-table">
+                        <thead>
+                            <tr>
+                                <th>Shift ID</th>
+                                <th>Staff ID</th>
+                                <th>Start Time</th>
+                                <th>End Time</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportTableBody">
+                            <!-- Rows will be added here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const CURRENT_USER_ID = {{ current_user.id if current_user.is_authenticated else 'null' }};
+</script>
+<script src="{{ url_for('static', filename='admin.js') }}"></script>
+{% endblock %}
