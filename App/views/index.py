@@ -15,3 +15,11 @@ def init():
 @index_views.route('/health', methods=['GET'])
 def health_check():
     return jsonify({'status':'healthy'})
+
+@index_views.route('/admin/dashboard', methods=['GET'])
+def admin_dashboard():
+    return render_template('admin_dashboard.html')
+
+@index_views.route('/staff/dashboard', methods=['GET'])
+def staff_dashboard():
+    return render_template('staff_dashboard.html')

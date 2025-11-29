@@ -10,10 +10,9 @@ from App.models.strategies.minimize_days import MinimizeDaysStrategy
 from App.models.strategies.balance_day_night import BalanceDayNightStrategy
 #controllerz
 from App.controllers.user import create_user, get_user, update_user, get_all_users_json
-from App.controllers.staff import staff_controller
-from App.controllers.admin import admin_controller
+import App.controllers.staff as staff_controller
+import App.controllers.admin as admin_controller
 from App.controllers.schedule_controller import ScheduleController
-from App.controllers.shift_controller import get_shift
 from App.controllers.auth import loginCLI
 
 @pytest.fixture(autouse=True)
@@ -51,7 +50,7 @@ class UserUnitTests(unittest.TestCase):
 
     def test_check_password_correct(self):
         user= create_user("alice", "pass123", "user")
-        self.assertTrue (user.check_password("pass123")
+        self.assertTrue (user.check_password("pass123"))
 
     def test_check_password_incorrect(self):
         user= create_user("alice2", "pass123", "user")
@@ -75,23 +74,23 @@ class AdminUnitTests(unittest.TestCase):
 
     def test_create_schedule_valid(self):
         admin = create_user("admin1", "adminpass", "admin")
-        schedule = create_schedule(admin.id, "Week Schedule")
+        schedule = admin_controller.create_schedule(admin.id, "Week Schedule")
         self.assertEqual(schedule.name, "Week Schedule")
         self.assertEqual(schedule.created_by, admin.id)
 
     def test_create_schedule_invalid_user(self):
         non_admin = create_user("user1", "userpass", "user")
         with self.assertRaises(PermissionError):
-            create_schedule(non_admin.id, "Invalid Schedule")
+            admin_controller.create_schedule(non_admin.id, "Invalid Schedule")
 
     def test_add_shift_valid(self):
         admin = create_user("admin2", "adminpass", "admin")
         staff = create_user("staff1", "staffpass", "staff")
-        schedule = create_schedule(admin.id, "Shift Test Schedule")
+        schedule = admin_controller.create_schedule(admin.id, "Shift Test Schedule")
 
         start = datetime.now()
         end = start + timedelta(hours=8)
-        shift = add_shift(admin.id, staff.id, schedule.id, start, end)
+        shift = admin_controller.add_shift(admin.id, staff.id, schedule.id, start, end)
 
         # Reload staff to check assigned shift
         retrieved_staff = get_user(staff.id)
@@ -102,12 +101,12 @@ class AdminUnitTests(unittest.TestCase):
     def test_add_shift_invalid_user(self):
         non_admin = create_user("user2", "userpass", "user")
         staff = create_user("staff2", "staffpass", "staff")
-        schedule = create_schedule(create_user("admin3", "adminpass", "admin").id, "Schedule")
+        schedule = admin_controller.create_schedule(create_user("admin3", "adminpass", "admin").id, "Schedule")
         start = datetime.now()
         end = start + timedelta(hours=8)
 
         with self.assertRaises(PermissionError):
-            add_shift(non_admin.id, staff.id, schedule.id, start, end)
+            admin_controller.add_shift(non_admin.id, staff.id, schedule.id, start, end)
 
 ### Staff unit tests ###
 
@@ -123,7 +122,7 @@ class StaffUnitTests(unittest.TestCase):
         shift1= Shift(staff_id=staff.id, schedule_id=1, start_time=datetime.now()+timedelta(hours=1), end_time=datetime.now()+timedelta(hours=3))
         shift2= Shift(staff_id=staff.id, schedule_id=1, start_time=datetime.now()+timedelta(hours=2), end_time=datetime.now()+timedelta(hours=4))
         staff.shifts = [shift2, shift1]
-        self.assertEqual (staff.upcoming_shifts, sorted(staff.shifts, key= lambda s.start_time))
+        self.assertEqual (staff.upcoming_shifts, sorted(staff.shifts, key= lambda s: s.start_time))
 
     def test_staff_current_shift(self):
         staff = Staff ("bob" , "pass123")
@@ -232,7 +231,7 @@ class UsersIntegrationTests(unittest.TestCase):
         start = datetime.now()
         end = start + timedelta(hours=8)
 
-        shift = ScheduleController.controller_add_shift(schedule.id, staff.id, start, end)
+        shift = ScheduleController.add_shift(schedule.id, staff.id, start, end)
         retrieved = get_user(staff.id)
 
         self.assertIn(shift, retrieved.shifts)
@@ -249,8 +248,8 @@ class UsersIntegrationTests(unittest.TestCase):
         start = datetime.now()
         end = start + timedelta(hours=8)
 
-        ScheduleController.controller_add_shift(schedule.id, staff.id, start, end)
-        ScheduleController.controller_add_shift(schedule.id, other_staff.id, start, end)
+        ScheduleController.add_shift(schedule.id, staff.id, start, end)
+        ScheduleController.add_shift(schedule.id, other_staff.id, start, end)
 
         roster = staff_controller.get_combined_roster(staff.id)
         self.assertTrue(any(s["staff_id"] == staff.id for s in roster))
@@ -265,7 +264,7 @@ class UsersIntegrationTests(unittest.TestCase):
         start = datetime.now()
         end = start + timedelta(hours=8)
 
-        shift = ScheduleController.controller_add_shift(schedule.id, staff.id, start, end)
+        shift = ScheduleController.add_shift(schedule.id, staff.id, start, end)
 
         staff_controller.clock_in(staff.id, shift.id)
         staff_controller.clock_out(staff.id, shift.id)
@@ -285,7 +284,7 @@ class UsersIntegrationTests(unittest.TestCase):
         start = datetime.now()
         end = start + timedelta(hours=8)
 
-        ScheduleController.controller_add_shift(schedule.id, staff.id, start, end)
+        ScheduleController.add_shift(schedule.id, staff.id, start, end)
         report = ScheduleController.get_Schedule_report(schedule.id)
 
         self.assertTrue(any(s["staff_id"]==staff.id for s in report ["shifts"]))
@@ -302,7 +301,7 @@ class UsersIntegrationTests(unittest.TestCase):
         end = start + timedelta(hours=8)
 
         with self.assertRaises(PermissionError):
-            ScheduleController.controller_add_shift(schedule.id, staff.id, start, end)
+            ScheduleController.add_shift(schedule.id, staff.id, start, end)
 
         with self.assertRaises(PermissionError):
             staff_controller.get_combined_roster(admin.id)

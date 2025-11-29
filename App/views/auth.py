@@ -31,7 +31,7 @@ def login_action():
     token = login(data['username'], data['password'])
     response = redirect(request.referrer)
     if not token:
-        flash('Bad username or password given'), 401
+        flash('Bad username or password given')
     else:
         flash('Login Successful')
         set_access_cookies(response, token) 
@@ -52,9 +52,11 @@ API Routes
 @auth_views.route('/api/login', methods=['POST'])
 def user_login_api():
   data = request.json
-  response = login(data['username'], data['password'])
-  if not response:
-    return jsonify(message='bad username or password given'), 403
+  token = login(data['username'], data['password'])
+  if not token:
+    return jsonify(message='bad username or password given'), 401
+  response = jsonify(access_token=token) 
+  set_access_cookies(response, token)
   return response
 
 @auth_views.route('/api/identify', methods=['GET'])

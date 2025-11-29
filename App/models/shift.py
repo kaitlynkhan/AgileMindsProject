@@ -23,8 +23,11 @@ class Shift(db.Model):
     clock_in = db.Column(db.DateTime, nullable=True)
     clock_out = db.Column(db.DateTime, nullable=True)
 
+    # Relationship to the user (typically Staff) who owns this shift
+    # This creates a backref 'shifts' on the User/Staff model
+    # Access via: staff_member.shifts or shift.staff
     staff = db.relationship(
-        "Staff",
+        "User",  # Generic User to allow polymorphic access
         backref="shifts",
         foreign_keys=[staff_id],
         lazy=True

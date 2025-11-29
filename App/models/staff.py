@@ -19,7 +19,12 @@ class Staff(User):
     # ---------- Constructor ----------
     def __init__(self, username: str, password: str) -> None:
         super().__init__(username, password, "staff")
-        #Staff specific initialisation can be place here in future
+        # Staff specific initialisation can be place here in future
+        # Note: self.shifts is available via backref from Shift model
+
+    # ---------- Properties ----------
+    # The following properties use self.shifts, which is created by the
+    # backref in the Shift model's relationship to User
 
     @property
     def upcoming_shifts(self)-> List:
@@ -48,8 +53,7 @@ class Staff(User):
     def completed_shifts(self) -> List["Shift"]:
         return [s for s in self.shifts if s.is_completed]
 
-    @property
-    def get_json(self)-> Dict:
+    def get_json(self) -> Dict:
         """Return Staff-specific JSON for frontend components."""
         return {
             "id": self.id,
