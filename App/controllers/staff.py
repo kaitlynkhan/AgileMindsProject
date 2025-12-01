@@ -28,7 +28,6 @@ def get_combined_roster(staff_id):
 def clock_in(staff_id, shift_id):
     _assert_staff(staff_id)
     shift = _get_shift_for_staff(staff_id, shift_id)
-
     shift.clock_in = datetime.now()
     db.session.commit()
     return shift
@@ -37,15 +36,13 @@ def clock_in(staff_id, shift_id):
 def clock_out(staff_id, shift_id):
     _assert_staff(staff_id)
     shift = _get_shift_for_staff(staff_id, shift_id)
-
     shift.clock_out = datetime.now()
     db.session.commit()
     return shift
 
 
 def get_shift(shift_id):
-    shift = Shift.query.get(shift_id)
+    shift = db.session.get(Shift, shift_id)
     if not shift:
         raise ValueError("Shift not found")
     return shift
-    #return db.session.get(Shift, shift_id)

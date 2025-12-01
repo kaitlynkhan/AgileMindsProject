@@ -27,6 +27,7 @@ def identify_page():
 
 @auth_views.route('/login', methods=['POST'])
 def login_action():
+<<<<<<< HEAD
     data = request.form
     token = login(data['username'], data['password'])
     response = redirect(request.referrer)
@@ -36,6 +37,13 @@ def login_action():
         flash('Login Successful')
         set_access_cookies(response, token) 
     return response
+=======
+  data = request.json
+  response = login_user(data['username'], data['password'])
+  if not response:
+    return jsonify(message='bad username or password given'), 403
+  return response
+>>>>>>> API-implemented
     
 
 @auth_views.route('/logout', methods=['GET'])
@@ -62,10 +70,8 @@ def user_login_api():
 @auth_views.route('/api/identify', methods=['GET'])
 @jwt_required()
 def identify_user():
-    return jsonify(
-        #username=current_user.username,
-        id=current_user.id
-    ), 200
+    username = get_jwt_identity()
+    return jsonify(logged_in_as=username), 200
 
 @auth_views.route('/api/logout', methods=['GET'])
 def logout_api():
