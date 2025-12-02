@@ -27,11 +27,15 @@ def identify_page():
 
 @auth_views.route('/login', methods=['POST'])
 def login_action():
-  data = request.json
-  response = login_user(data['username'], data['password'])
-  if not response:
-    return jsonify(message='bad username or password given'), 403
-  return response
+    data = request.json
+    token = login(data['username'], data['password'])
+    response = redirect(request.referrer)
+    if not token:
+        return jsonify('Bad username or password given')
+    else:
+        flash('Login Successful')
+        set_access_cookies(response, token) 
+    return response
     
 
 @auth_views.route('/logout', methods=['GET'])

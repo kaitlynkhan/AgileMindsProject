@@ -33,11 +33,11 @@ class Staff(User):
         return sorted([s for s in self.shifts if s.start_time > now], key=lambda s: s.start_time)
 
     @property
-    def current_shift(self)-> Optional["Shift"]:
+    def current_shift(self):
         """Return the shift currently in progress, or None if none."""
         now = datetime.now()
         for shift in self.shifts:
-            if shift.start_time <= now <= shift.end_time:
+            if shift.start_time <= now and now <= shift.end_time:
                 return shift
         return None
 

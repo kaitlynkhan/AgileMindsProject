@@ -17,9 +17,8 @@ def login(username, password):
         token = create_access_token(identity=user)
         response = jsonify(access_token=token)
         set_access_cookies(response, token)
-        return response
-    return jsonify(message="Invalid username or password"), 401
-
+        return token
+    return None
 
 def loginCLI(username, password):
     user = _get_user_by_username(username)

@@ -16,8 +16,9 @@ staff_views = Blueprint('staff_views', __name__, template_folder='../templates')
 @staff_views.route("/allshifts", methods=['GET'])
 @jwt_required()
 def get_all_shifts():
+    try:    
         data = request.get_json()
-        staffId =int(get_jwt_identity())
+        staffID =int(get_jwt_identity())
         staf = staff._assert_staff(staffID)
         if not staffID or not staf:
             return jsonify({"error": "Unauthorized access"}), 403
@@ -32,46 +33,27 @@ def get_all_shifts():
 @staff_views.route('/staffshift', methods=['GET'])
 @jwt_required()
 def staff_get_shift():
-    try: 
-        staffID =int(get_jwt_identity())
-        
-        data=request.get_json()
-        shiftID = data.get("shift_id")
-        #staffID = data.get("staff_id")
-        if not shiftID or not staffID:
+    try:
+        staff_id = int(get_jwt_identity())
+        data = request.get_json()
+
+        shift_id = data.get("shift_id")
+        if not shift_id or not staff_id:
             return jsonify({"error": "valid shift_id and staff_id are required"}), 400
-        staf = staff._assert_staff(staffID)
-        if not staffID or not staf:
+        staff_member = staff._assert_staff(staff_id)
+        if not staff_member:
             return jsonify({"error": "Unauthorized access"}), 403
-        shift = staff._get_shift_for_staff(int(staffID), int(shiftID))
+        shift = staff._get_shift_for_staff(staff_id, int(shift_id))
+
         return jsonify(shift.get_json()), 200
-    except(SQLAlchemyError) as e:
-        return jsonify({"error": "Database error"}), 500
-    except(ValueError) as ve:
-        return jsonify({"error": str(ve)}), 404
-        
-        if not staff_id or not shift_id:
-            return jsonify({"error": "staff_id and shift_id are required"}), 400
-        
-        staff_id = int(staff_id)
-        shift_id = int(shift_id)
-        
-        # Verify staff exists and has correct role
-        try:
-            staff_member = staff._assert_staff(staff_id)
-        except PermissionError as e:
-            return jsonify({"error": str(e)}), 403
-        
-        # Get shift for staff
-        shift = staff._get_shift_for_staff(staff_id, shift_id)
-        return jsonify(shift.get_json()), 200
-        
+
     except PermissionError as e:
         return jsonify({"error": str(e)}), 403
-    except ValueError as e:
-        return jsonify({"error": str(e)}), 404
+    except ValueError as ve:
+        return jsonify({"error": str(ve)}), 404
     except SQLAlchemyError:
         return jsonify({"error": "Database error"}), 500
+
 
 @staff_views.route('/staff/combinedRoster', methods=['GET'])
 @jwt_required()
@@ -105,12 +87,12 @@ def staff_clock_in():
     staf = staff._assert_staff(staffId)
     if not staf:
         return jsonify({"error": "unauthorized access"}), 403
-    currentshift = staf.current_shift 
+    shiftid = request.json.get("shift_id")
+    currentshift = staff._get_shift_for_staff(staffId, shiftid)
     if currentshift is None:
         return jsonify({"error": " not currrent shift found "}), 404
-    shiftid = currentshift.id
-    currentshift = staff.clock_in(staffId,4)
-    return jsonify(currentshift), 200
+    currentshift = staff.clock_in(staffId,int(shiftid))
+    return jsonify(currentshift.get_json()), 200
 
 @staff_views.route("/staff/clockOut", methods=["POST"])
 @jwt_required()
@@ -119,10 +101,7 @@ def staff_clock_out():
     Clock out from a shift.
     
     Expected JSON:
-    {
-        "staff_id": int,
-        "shift_id": int
-    }
+    C
     """
     try:
         data = request.get_json()
