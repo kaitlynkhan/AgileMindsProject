@@ -162,8 +162,7 @@ def get_my_schedules():
             return jsonify({"error": "Staff member not found"}), 404
         
         # Get schedules assigned to this staff member
-        schedules = [schedule.get_json() for schedule in staff_member.schedules]
-        
+        schedules = staff.get_combined_roster(staff_id)
         return jsonify({
             "staff_id": staff_id,
             "username": staff_member.username,

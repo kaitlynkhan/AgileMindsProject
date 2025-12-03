@@ -15,8 +15,6 @@ def login(username, password):
     user = _get_user_by_username(username)
     if user and user.check_password(password):
         token = create_access_token(identity=user)
-        response = jsonify(access_token=token)
-        set_access_cookies(response, token)
         return token
     return None
 
